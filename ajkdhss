@@ -1,0 +1,153 @@
+all_word_list =[]
+
+	print(train_list_words[1:10])
+
+	for i in train_list_words:
+		for j in i:
+			all_word_list.append(j)
+
+	all_tags =['C','D','E','F','I','J','L','M','N','P','R','S','T','U','V','W',',','.',':','-','`',"'",'$','###','#','UNK']		
+
+
+
+	unique_word_list =list(set(all_word_list))
+
+	# print("length" , len(unique_word_list))
+	try:
+		with open('word_count.pickle','rb') as h:
+			word_list_with_count = pickle.load(h)
+	except:
+		word_list_with_count = {}
+		for i in unique_word_list:
+			word_list_with_count[i] = all_word_list.count(i)
+		
+		with open('word_count.pickle','wb') as h:
+			pickle.dump(word_list_with_count,h)
+
+			
+	for i in all_tags:
+		dict2_tag_follow_tag[i] ={}
+		for j in all_tags:
+			dict2_tag_follow_tag[i][j] = 0
+
+	for i in unique_word_list:
+		dict2_word_tag[i] = {}
+		for j in all_tags:
+			dict2_word_tag[i][j] = 0
+
+	word_mapping ={}		
+	for idx1,i in enumerate(train_list_words):
+		
+		for idx2,j in enumerate(i):
+			a=[]
+			dict2_word_tag[j][train_list_tags[idx1][idx2]] += 1
+			a.append((idx1,idx2))
+			try :
+				word_mapping[j].append(a)
+			except:
+				word_mapping[j] =[]
+				word_mapping[j].append(a)
+	
+
+	# print(train_list_tags[1:10])		
+
+	with open('WMP.pickle','wb') as h:
+		pickle.dump(word_mapping,h)
+
+	dict2_word_tag['thisisnotknown'] = {}
+	dict2_word_tag['thisisanumber'] = {}
+	dict2_word_tag['thisisnotknown']['UNK'] = 0
+	dict2_word_tag['thisisanumber']['C'] = 0
+
+	for i in dict2_word_tag:
+		total = 0
+		for j in dict2_word_tag[i]:
+			try:
+				x=float(i)
+				dict2_word_tag['thisisanumber']['C'] += 1
+				dict2_word_tag[i][j] = 0
+				word_list_with_count[i] = 0
+				for k in word_mapping[i]:
+					train_list_tags[k[0][0]][k[0][1]] = 'C'
+					train_list_words[k[0][0]][k[0][1]] = 'thisisanumber'
+			except:
+				pass	
+			total += dict2_word_tag[i][j]	
+
+		if total == 1:
+			dict2_word_tag['thisisnotknown']['UNK'] += 1
+			dict2_word_tag[i] = {}
+			word_list_with_count[i] = 0 
+			for k in word_mapping[i]:
+				train_list_tags[k[0][0]][k[0][1]] = 'UNK'
+				train_list_words[k[0][0]][k[0][1]] = 'thisisnotknown'
+
+
+
+
+	for idx1,i in enumerate(train_list_tags):
+		
+		for idx2,j in enumerate(i):
+
+			if idx2 == 0:		
+				dict2_tag_follow_tag['###'][j] += 1
+
+			elif idx2 < len(i)-1:
+				dict2_tag_follow_tag[j][i[idx2+1]] += 1
+
+			# else:
+			# 	dict2_tag_follow_tag[j][i[idx2+1]] += 1
+
+	# for i in all_tags:
+	# 	for j in all_tags:
+	# 		if dict2_tag_follow_tag[i][j] == 0:
+	# 			del dict2_tag_follow_tag[i][j]
+
+
+	# 	if dict2_tag_follow_tag[i] == {}:
+	# 		del dict2_tag_follow_tag[i]
+
+
+	for i in dict2_tag_follow_tag:
+		total = 0
+		try:
+			for j in dict2_tag_follow_tag[i]:
+				total += dict2_tag_follow_tag[i][j]
+
+			for j in dict2_tag_follow_tag[i]:
+				dict2_tag_follow_tag[i][j] /= total
+
+		except:
+			pass
+
+
+	with open('dict.pickle','wb') as h:
+		pickle.dump(dict2_tag_follow_tag,h)
+
+	# for i in dict2_word_tag:
+	# 	total = 0
+	# 	for j in dict2_word_tag[i]:
+	# 		total += dict2_word_tag[i][j]
+
+
+
+	# 	if total != 0:
+	# 		for j in dict2_word_tag[i]:
+	# 			dict2_word_tag[i][j] /= total
+
+	for i in all_tags:
+		total = 0
+		try:
+			for j in dict2_word_tag:
+				total += dict2_word_tag[j][i]
+		
+			for j in dict2_word_tag:
+				dict2_word_tag[j][i] /= total	
+
+		except:
+			
+			pass
+
+
+	with open('dict2.pickle','wb') as h:
+		pickle.dump(dict2_word_tag,h)
